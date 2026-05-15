@@ -1,0 +1,79 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User account information and marketing preferences",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["client", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "businessName": { "type": "string" },
+        "whatsapp": { "type": "string" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "MarketingCampaign": {
+      "title": "Marketing Campaign",
+      "description": "Meta Ads campaign planning and tracking",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "status": { "type": "string", "enum": ["planned", "active", "completed"] },
+        "budget": { "type": "number" },
+        "platform": { "type": "string", "enum": ["facebook", "instagram", "meta-all"] },
+        "startDate": { "type": "string", "format": "date" },
+        "endDate": { "type": "string", "format": "date" },
+        "notes": { "type": "string" }
+      }
+    },
+    "ContactLead": {
+      "title": "Contact Lead",
+      "description": "Leads collected from contact and service forms",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "message": { "type": "string" },
+        "service": { "type": "string" },
+        "status": { "type": "string", "enum": ["new", "contacted", "qualified", "closed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "GeneratedContent": {
+      "title": "Generated Content",
+      "description": "AI generated marketing copy and assets",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "type": { "type": "string" },
+        "prompt": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profiles"
+    },
+    "/campaigns/{campaignId}": {
+      "schema": "MarketingCampaign",
+      "description": "Marketing campaigns"
+    },
+    "/leads/{leadId}": {
+      "schema": "ContactLead",
+      "description": "Service inquiries"
+    },
+    "/generated_content/{contentId}": {
+      "schema": "GeneratedContent",
+      "description": "History of AI generations"
+    }
+  }
+}

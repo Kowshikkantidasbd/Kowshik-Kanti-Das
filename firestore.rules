@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 5. Stats (Visitors) - Moved to top for priority check
+    match /stats/{docId} {
+      allow read, write: if docId == 'visitors';
+    }
+
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helpers
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isAdmin() { 
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (request.auth.token.email == 'adittod296@gmail.com' && request.auth.token.email_verified == true)
+      ); 
+    }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // 1. User Profiles
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && isValidUserProfile(request.resource.data);
+      allow update: if isOwner(userId) && isValidUserProfile(request.resource.data) 
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL', 'businessName', 'whatsapp']);
+    }
+
+    function isValidUserProfile(data) {
+      return data.uid == request.auth.uid 
+             && data.email is string && data.email.size() <= 200
+             && data.displayName is string && data.displayName.size() <= 100
+             && (!('businessName' in data) || (data.businessName is string && data.businessName.size() <= 100))
+             && data.role in ['client', 'admin'];
+    }
+
+    // 2. Campaigns
+    match /campaigns/{campaignId} {
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid; 
+      allow create: if isSignedIn() && isValidCampaign(request.resource.data) && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid && isValidCampaign(request.resource.data)
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'status', 'budget', 'notes', 'endDate', 'updatedAt']);
+    }
+
+    function isValidCampaign(data) {
+      return data.userId == request.auth.uid
+             && data.name is string && data.name.size() <= 200
+             && data.status in ['planned', 'active', 'completed']
+             && data.budget is number;
+    }
+
+    // 3. Leads (Open for creation)
+    match /leads/{leadId} {
+      allow create: if isValidLead(request.resource.data);
+      allow get, list: if isAdmin();
+    }
+
+    function isValidLead(data) {
+      return data.name is string && data.name.size() <= 100
+             && data.email is string && data.email.size() <= 100
+             && data.message is string && data.message.size() <= 2000;
+    }
+
+    // 4. AI History (was generated_content)
+    match /ai_history/{contentId} {
+      allow read, list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidAIHistory(request.resource.data);
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    function isValidAIHistory(data) {
+      return data.userId == request.auth.uid
+             && data.prompt is string && data.prompt.size() <= 2000
+             && data.result is string && data.result.size() <= 10000
+             && data.type is string
+             && data.createdAt is string; // or timestamp if using serverTimestamp
+    }
+
+  }
+}

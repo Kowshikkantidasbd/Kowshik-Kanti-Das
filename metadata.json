@@ -1,0 +1,6 @@
+{
+  "name": "Meta Ai Marketing",
+  "description": "Premium marketing agency platform featuring Meta Ads strategy, portfolio showcase, and a suite of AI-powered content generation tools.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["AI Content Generation", "Meta Ads Planning", "Client Dashboard"]
+}
